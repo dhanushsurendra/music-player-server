@@ -12,6 +12,7 @@ const app = express()
 const SpotifyWebApi = require('spotify-web-api-node')
 const path = require('path')
 const ContentBasedRecommender = require('content-based-recommender')
+const lyricsFinder = require('lyrics-finder');
 
 connection()
 app.use(cors())
@@ -100,6 +101,11 @@ app.use('/api/recommended', (req, res) => {
 		console.log(recommendations)
 
 	})
+})
+
+app.get("/api/lyrics", async (req, res) => {
+	const lyrics = (await lyricsFinder(req.query.artist, req.query.track)) || "No Lyrics Found"
+	res.json({ lyrics })
 })
 
 app.use('/api/users/', userRoutes)
