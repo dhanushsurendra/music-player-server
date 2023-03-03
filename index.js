@@ -18,8 +18,6 @@ connection()
 app.use(cors())
 app.use(express.json())
 
-const accessToken = ''
-
 app.use('/api/refresh', (req, res) => {
 	const refreshToken = req.body.refreshToken
 	const spotifyApi = new SpotifyWebApi({
@@ -35,9 +33,7 @@ app.use('/api/refresh', (req, res) => {
 			res.json({
 				accessToken: data.body.accessToken,
 				expiresIn: data.body.expiresIn
-			})
-
-			accessToken = data.body.accessToken
+			}) 
 		})
 		.catch(() => {
 			res.sendStatus(500)
