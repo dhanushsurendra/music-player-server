@@ -33,7 +33,7 @@ router.post("/", async (req, res) => {
 
 // get all users
 router.get("/", admin, async (req, res) => {
-	const users = await User.find().select("-password -__v");
+	const users = await User.find({ isAdmin: false }).select("-password -__v");
 	res.status(200).send({ data: users });
 });
 

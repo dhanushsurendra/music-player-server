@@ -13,7 +13,11 @@ const userSchema = new mongoose.Schema({
 	year: { type: String, required: true },
 	likedSongs: { type: [String], default: [] },
 	playlists: { type: [String], default: [] },
+	recents: { type: [String], default: [] },
 	isAdmin: { type: Boolean, default: false },
+
+}, {
+	timestamps: true
 });
 
 userSchema.methods.generateAuthToken = function () {

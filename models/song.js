@@ -7,6 +7,7 @@ const songSchema = new mongoose.Schema({
 	song: { type: String, required: true },
 	img: { type: String, required: true },
 	duration: { type: String, required: true },
+	genre: { type: String, required: true }
 });
 
 const validate = (song) => {
@@ -16,6 +17,7 @@ const validate = (song) => {
 		song: Joi.string().required(),
 		img: Joi.string().required(),
 		duration: Joi.number().required(),
+		genre: Joi.string().required(),
 	});
 	return schema.validate(song);
 };
