@@ -4,6 +4,7 @@ const { Song, validate } = require('../models/song')
 const auth = require('../middleware/auth')
 const admin = require('../middleware/admin')
 const validateObjectId = require('../middleware/validateObjectId')
+const lyricsFinder = require('lyrics-finder')
 
 // Create song
 router.post('/', admin, async (req, res) => {
@@ -69,7 +70,7 @@ router.get('/like', auth, async (req, res) => {
 })
 
 router.post('/recents/:id', auth, async (req, res) => {
-	console.log(req.user._id);
+	console.log(req.user._id)
 	let resMessage = ''
 	const song = await Song.findById(req.params.id)
 	if (!song) return res.status(400).send({ message: 'Song does not exist' })
@@ -78,7 +79,7 @@ router.post('/recents/:id', auth, async (req, res) => {
 	const index = user.recents.indexOf(song._id)
 
 	if (index === -1) {
-		user.recents.push(song._id)	
+		user.recents.push(song._id)
 		resMessage = 'Added to your recents songs'
 	}
 
@@ -96,16 +97,27 @@ router.get('/recommended', auth, async (req, res) => {
 	const user = await User.findById(req.user._id)
 	let recentsArr = []
 	let songArr = []
-	
+
 	for (const item of user.recents) {
 		const song = await Song.findById(item)
 		songArr.push(item)
 		recentsArr.push(song.genre)
 	}
 
-	const song = await Song.find({ genre: { $in: recentsArr }, _id: { $nin: songArr } })
+	const song = await Song.find({
+		genre: { $in: recentsArr },
+		_id: { $nin: songArr }
+	})
 
 	res.status(200).send({ data: song })
+})
+
+// get lyrics
+router.get('/lyrics', auth, async (req, res) => {
+	const lyrics =
+		(await lyricsFinder(req.query.artist, req.query.track)) ||
+		'No Lyrics Found'
+	res.json({ lyrics })
 })
 
 module.exports = router
