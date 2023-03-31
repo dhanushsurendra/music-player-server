@@ -5,6 +5,7 @@ const auth = require('../middleware/auth')
 const admin = require('../middleware/admin')
 const validateObjectId = require('../middleware/validateObjectId')
 const lyricsFinder = require('lyrics-finder')
+const _ = require('lodash')
 
 // Create song
 router.post('/', admin, async (req, res) => {
@@ -97,27 +98,99 @@ router.get('/recommended', auth, async (req, res) => {
 	const user = await User.findById(req.user._id)
 	let recentsArr = []
 	let songArr = []
+	let artistArr = []
 
 	for (const item of user.recents) {
 		const song = await Song.findById(item)
 		songArr.push(item)
+		artistArr.push(song.artist)
 		recentsArr.push(song.genre)
 	}
 
 	const song = await Song.find({
-		genre: { $in: recentsArr },
-		_id: { $nin: songArr }
+		$or: [
+			{
+				$and: [
+					{
+						genre: { $in: recentsArr },
+						_id: { $nin: songArr }
+					}
+				]
+			},
+			{
+				$and: [
+					{
+						artist: { $in: artistArr },
+						_id: { $nin: songArr }
+					}
+				]
+			}
+		]
 	})
 
 	res.status(200).send({ data: song })
 })
 
+// get popular songs
+router.get('/popular', admin, async (req, res) => {
+
+	let popular = []
+
+	const docs = await User.find({
+		recents: { $exists: true, $ne: [] }
+	}).select('-_id recents')
+
+	const arrays = docs.map((obj) => obj.recents)
+
+	// Use reduce to count the frequency of each element in the array
+	const frequency = arrays.reduce((accumulator, currentArray) => {
+		currentArray.forEach((element) => {
+			if (accumulator[element]) {
+				accumulator[element]++
+			} else {
+				accumulator[element] = 1
+			}
+		})
+		return accumulator
+	}, {})
+
+	// Sort the frequency object by value in descending order
+	const sortedFrequency = Object.entries(frequency)
+		.sort(([, a], [, b]) => b - a)
+		.slice(0, 4)
+		.reduce((acc, [key, value]) => ({ ...acc, [key]: value }), {})
+
+	const songIds = Object.keys(sortedFrequency)
+	const query = { _id: { $in: songIds } }
+
+	Song.find(query, (err, songs) => {
+		if (err) {
+			console.error(err)
+			return
+		}
+
+		// Extract the songs from the query results
+		const songData = songs.map(({ _id, name, song, img, duration, genre, artist }) => ({
+			_id,
+			name,
+			song,
+			img, 
+			duration,
+			genre,
+			artist
+		}))
+
+		popular = songData
+		res.status(200).send({ popular })
+	})
+})
+
 // get lyrics
-router.get('/lyrics', auth, async (req, res) => {
-	const lyrics =
-		(await lyricsFinder(req.query.artist, req.query.track)) ||
-		'No Lyrics Found'
-	res.json({ lyrics })
+router.get('/lyrics', async (req, res) => {
+	console.log(req.query.artist, req.query.track);
+	const lyrics = (await lyricsFinder("poets of fall", "carnival of rust"))
+	console.log(lyrics);
+	res.json({ lyrics: "No lyrics found" })
 })
 
 module.exports = router
